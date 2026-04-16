@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
 
+const isVercel = !!process.env.VERCEL;
+
 const nextConfig: NextConfig = {
-  output: "standalone",
-  // Use separate build directories for dev vs production to prevent
-  // 'next build' from corrupting the dev server's cache
-  distDir: process.env.NODE_ENV === "production" ? ".next-prod" : ".next",
+  // standalone output is for Docker only — Vercel handles its own bundling
+  ...(isVercel ? {} : { output: "standalone" }),
+  // Vercel expects .next; Docker uses .next-prod to avoid dev/prod cache conflicts
+  distDir: isVercel ? ".next" : process.env.NODE_ENV === "production" ? ".next-prod" : ".next",
 };
 
 export default nextConfig;
