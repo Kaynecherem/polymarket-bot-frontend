@@ -1,0 +1,4 @@
+node_modules
+.next
+.next-prod
+.env.local
