@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card } from "@/components/ui/card";
 import { STRATEGY_META } from "@/lib/constants";
 import { formatPrice, formatCurrency, formatPnl } from "@/lib/utils";
-import { executeTrade } from "@/lib/api";
+import { closePosition } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { Strategy } from "@/lib/types";
@@ -115,14 +115,14 @@ export function TradeDetailPanel({
 
   const handleClose = async () => {
     try {
-      await executeTrade({ market_id: trade.market_id, signal_id: "", action: "skip" });
-      toast.success("Position close requested");
+      await closePosition(trade.market_id);
+      toast.success("Position closed");
       queryClient.invalidateQueries({ queryKey: ["positions"] });
       queryClient.invalidateQueries({ queryKey: ["portfolio"] });
       queryClient.invalidateQueries({ queryKey: ["trades"] });
       onClose();
     } catch (err) {
-      toast.error("Failed to close position");
+      toast.error(`Failed to close position: ${err instanceof Error ? err.message : "Unknown"}`);
     }
   };
 
