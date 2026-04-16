@@ -2,35 +2,48 @@
 
 import { usePortfolio } from "@/hooks/use-portfolio";
 import { usePositions } from "@/hooks/use-positions";
+import { useHealth } from "@/hooks/use-health";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useAppStore } from "@/stores/app-store";
+import { toggleBot as toggleBotApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCurrency, formatPnl } from "@/lib/utils";
 import { Moon, Sun, Menu, TrendingUp, TrendingDown } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function Header() {
   const { data: portfolio } = usePortfolio();
   const { data: positions } = usePositions();
+  const { data: health } = useHealth();
   const wsStatus = useWebSocket();
-  const { botActive, toggleBot, toggleSidebar } = useAppStore();
+  const { toggleSidebar } = useAppStore();
   const { theme, setTheme } = useTheme();
+  const queryClient = useQueryClient();
+
+  const botActive = health?.auto_trade ?? false;
+
+  const handleToggleBot = () => {
+    const next = !botActive;
+    toggleBotApi(next)
+      .then(() => queryClient.invalidateQueries({ queryKey: ["health"] }))
+      .catch((err) => console.error("Failed to toggle bot:", err));
+  };
 
   const balance = portfolio?.balance ?? 0;
   const locked = (positions ?? []).reduce((s, p) => s + p.size_usdc, 0);
   const totalPnl = (portfolio?.realised_pnl ?? 0) + (portfolio?.unrealised_pnl ?? 0);
   const paperMode = portfolio?.paper_mode ?? true;
 
-  // Bot status display
+  // Bot status — derived from backend health poll, not local state
   let statusDot = "bg-muted-foreground";
   let statusText = "STOPPED";
   if (wsStatus === "connecting") {
     statusDot = "bg-muted-foreground animate-pulse";
     statusText = "CONNECTING...";
   } else if (botActive) {
-    // Check if drawdown guard is active (from portfolio data)
     statusDot = "bg-accent-green shadow-[0_0_8px_hsl(var(--accent-green))] animate-pulse_dot";
     statusText = "RUNNING";
   }
@@ -91,7 +104,7 @@ export function Header() {
         <Button
           variant={botActive ? "destructive" : "success"}
           size="sm"
-          onClick={toggleBot}
+          onClick={handleToggleBot}
         >
           {botActive ? "STOP BOT" : "START BOT"}
         </Button>
