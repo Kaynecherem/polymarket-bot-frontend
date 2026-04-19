@@ -18,6 +18,9 @@ import {
   fetchConservativeMode,
   toggleConservativeMode,
 } from "@/lib/api";
+import { useAuth } from "@/providers/auth-provider";
+import { AdminOnly, AdminButton } from "@/components/ui/admin-only";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Shield, ShieldOff } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -100,6 +103,7 @@ function StrategyConfigCard({
 }) {
   const [local, setLocal] = useState<Record<string, unknown>>(config);
   const [saving, setSaving] = useState(false);
+  const { isAdmin } = useAuth();
   const hasChanges = JSON.stringify(local) !== JSON.stringify(config);
 
   useEffect(() => { setLocal(config); }, [config]);
@@ -120,6 +124,7 @@ function StrategyConfigCard({
         <Switch
           checked={local.enabled as boolean}
           onCheckedChange={(v) => setLocal((p) => ({ ...p, enabled: v }))}
+          disabled={!isAdmin}
         />
       </div>
       <Separator className="mb-3" />
@@ -131,6 +136,7 @@ function StrategyConfigCard({
               <Switch
                 checked={!!local[param.key]}
                 onCheckedChange={(v) => setLocal((p) => ({ ...p, [param.key]: v }))}
+                disabled={!isAdmin}
               />
             ) : (
               <Input
@@ -141,21 +147,24 @@ function StrategyConfigCard({
                 max={param.max}
                 step={param.step}
                 onChange={(e) => setLocal((p) => ({ ...p, [param.key]: parseFloat(e.target.value) || 0 }))}
+                disabled={!isAdmin}
               />
             )}
           </div>
         ))}
       </div>
-      <div className="mt-3 flex gap-2">
-        <Button variant="success" size="sm" onClick={handleSave} disabled={saving || !hasChanges}>
-          {saving ? "Saving..." : "Save"}
-        </Button>
-        {hasChanges && (
-          <Button variant="ghost" size="sm" onClick={() => setLocal(config)}>
-            Discard
+      {isAdmin && (
+        <div className="mt-3 flex gap-2">
+          <Button variant="success" size="sm" onClick={handleSave} disabled={saving || !hasChanges}>
+            {saving ? "Saving..." : "Save"}
           </Button>
-        )}
-      </div>
+          {hasChanges && (
+            <Button variant="ghost" size="sm" onClick={() => setLocal(config)}>
+              Discard
+            </Button>
+          )}
+        </div>
+      )}
     </Card>
   );
 }
@@ -190,6 +199,7 @@ const SWING_FIELDS: ParamDef[] = [
 ];
 
 export default function StrategiesContent() {
+  const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const { data: configs, isLoading } = useQuery({
     queryKey: ["strategy-configs"],
@@ -307,6 +317,7 @@ export default function StrategiesContent() {
           </div>
           <Switch
             checked={conservativeEnabled}
+            disabled={!isAdmin}
             onCheckedChange={async (checked) => {
               try {
                 await toggleConservativeMode(checked);
@@ -331,6 +342,7 @@ export default function StrategiesContent() {
           </div>
           <Switch
             checked={true}
+            disabled={!isAdmin}
             onCheckedChange={async (checked) => {
               toast.info(`Auto-tune ${checked ? "enabled" : "disabled"} (runtime only)`);
             }}
@@ -367,20 +379,23 @@ export default function StrategiesContent() {
                 max={field.max}
                 step={field.step}
                 onChange={(e) => setRiskLocal((p) => ({ ...p, [field.key]: parseFloat(e.target.value) || 0 }))}
+                disabled={!isAdmin}
               />
             </div>
           ))}
         </div>
-        <div className="mt-3 flex gap-2">
-          <Button variant="success" size="sm" onClick={handleRiskSave} disabled={riskSaving || !riskHasChanges}>
-            {riskSaving ? "Saving..." : "Save"}
-          </Button>
-          {riskHasChanges && (
-            <Button variant="ghost" size="sm" onClick={() => setRiskLocal(riskConfig ?? {})}>
-              Discard
+        {isAdmin && (
+          <div className="mt-3 flex gap-2">
+            <Button variant="success" size="sm" onClick={handleRiskSave} disabled={riskSaving || !riskHasChanges}>
+              {riskSaving ? "Saving..." : "Save"}
             </Button>
-          )}
-        </div>
+            {riskHasChanges && (
+              <Button variant="ghost" size="sm" onClick={() => setRiskLocal(riskConfig ?? {})}>
+                Discard
+              </Button>
+            )}
+          </div>
+        )}
       </Card>
 
       {/* Trading Tiers */}
@@ -404,6 +419,7 @@ export default function StrategiesContent() {
                   max={field.max}
                   step={field.step}
                   onChange={(e) => setTierLocal((p) => ({ ...p, [field.key]: parseFloat(e.target.value) || 0 }))}
+                  disabled={!isAdmin}
                 />
               </div>
             ))}
@@ -429,6 +445,7 @@ export default function StrategiesContent() {
                   max={field.max}
                   step={field.step}
                   onChange={(e) => setTierLocal((p) => ({ ...p, [field.key]: parseFloat(e.target.value) || 0 }))}
+                  disabled={!isAdmin}
                 />
               </div>
             ))}
@@ -436,11 +453,12 @@ export default function StrategiesContent() {
         </Card>
       </div>
 
-      <div className="flex justify-end">
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm">Reset All to Defaults</Button>
-          </AlertDialogTrigger>
+      <AdminOnly>
+        <div className="flex justify-end">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">Reset All to Defaults</Button>
+            </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Reset All Strategy Configs?</AlertDialogTitle>
@@ -455,8 +473,9 @@ export default function StrategiesContent() {
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
-        </AlertDialog>
-      </div>
+          </AlertDialog>
+        </div>
+      </AdminOnly>
     </motion.div>
   );
 }
