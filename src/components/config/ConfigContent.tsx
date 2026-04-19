@@ -4,7 +4,10 @@ import { ConfigForm } from "@/components/config/ConfigForm";
 import { ConnectionTest } from "@/components/config/ConnectionTest";
 import { LiveWarning } from "@/components/config/LiveWarning";
 import { Card } from "@/components/ui/card";
+import { AdminOnly } from "@/components/ui/admin-only";
 import { useDetailedHealth } from "@/hooks/use-detailed-health";
+import { useHealth } from "@/hooks/use-health";
+import { useAuth } from "@/providers/auth-provider";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { ResetButton } from "@/components/dashboard/ResetButton";
@@ -101,43 +104,47 @@ function PaperTradingSection() {
     <Card className="max-w-xl p-5">
       <div className="mb-3 flex items-center justify-between">
         <div className="text-sm font-semibold">Paper Trading</div>
-        <ResetButton />
+        <AdminOnly>
+          <ResetButton />
+        </AdminOnly>
       </div>
 
-      <div className="mb-4 grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label>Deposit</Label>
-          <div className="flex gap-2">
-            <Input
-              type="number"
-              placeholder="Amount"
-              value={depositAmount}
-              onChange={(e) => setDepositAmount(e.target.value)}
-              min="0"
-              step="100"
-            />
-            <Button variant="success" size="sm" onClick={handleDeposit} disabled={depositing}>
-              {depositing ? "..." : "+"}
-            </Button>
+      <AdminOnly>
+        <div className="mb-4 grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label>Deposit</Label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                placeholder="Amount"
+                value={depositAmount}
+                onChange={(e) => setDepositAmount(e.target.value)}
+                min="0"
+                step="100"
+              />
+              <Button variant="success" size="sm" onClick={handleDeposit} disabled={depositing}>
+                {depositing ? "..." : "+"}
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Withdraw</Label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                placeholder="Amount"
+                value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(e.target.value)}
+                min="0"
+                step="100"
+              />
+              <Button variant="destructive" size="sm" onClick={handleWithdraw} disabled={withdrawing}>
+                {withdrawing ? "..." : "-"}
+              </Button>
+            </div>
           </div>
         </div>
-        <div className="space-y-2">
-          <Label>Withdraw</Label>
-          <div className="flex gap-2">
-            <Input
-              type="number"
-              placeholder="Amount"
-              value={withdrawAmount}
-              onChange={(e) => setWithdrawAmount(e.target.value)}
-              min="0"
-              step="100"
-            />
-            <Button variant="destructive" size="sm" onClick={handleWithdraw} disabled={withdrawing}>
-              {withdrawing ? "..." : "-"}
-            </Button>
-          </div>
-        </div>
-      </div>
+      </AdminOnly>
 
       {transactions && transactions.length > 0 && (
         <div>
@@ -169,6 +176,9 @@ function PaperTradingSection() {
 }
 
 export default function ConfigContent() {
+  const { data: health } = useHealth();
+  const paperMode = health?.paper_mode ?? true;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -179,23 +189,13 @@ export default function ConfigContent() {
       <ConfigForm />
       <ConnectionTest />
 
-      <Card className="max-w-xl p-5">
-        <div className="mb-3 text-sm font-semibold">Setup Guide</div>
-        <ol className="list-decimal space-y-1.5 pl-5 text-xs leading-relaxed text-muted-foreground">
-          <li>Clone the repository and install dependencies</li>
-          <li>Copy <code className="text-accent-blue">.env.example</code> to <code className="text-accent-blue">backend/.env</code></li>
-          <li>Set <code className="text-accent-blue">PAPER_MODE=true</code> for paper trading (default)</li>
-          <li>Optionally add your NewsAPI key for sentiment analysis</li>
-          <li>Start the backend: <code className="text-accent-blue">cd backend && python main.py</code></li>
-          <li>Start the frontend: <code className="text-accent-blue">cd frontend && pnpm dev</code></li>
-          <li>For live trading: set <code className="text-accent-blue">PAPER_MODE=false</code> and add your private key</li>
-          <li>Use the Test Connection button above to verify the backend is running</li>
-        </ol>
-      </Card>
+      {paperMode && (
+        <PaperTradingSection />
+      )}
 
-      <PaperTradingSection />
-
-      <LiveWarning />
+      {!paperMode && (
+        <LiveWarning />
+      )}
 
       <SystemHealthPanel />
     </motion.div>
