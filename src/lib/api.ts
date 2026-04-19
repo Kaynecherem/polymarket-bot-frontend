@@ -94,6 +94,13 @@ export async function toggleBot(active: boolean): Promise<{ auto_trade: boolean 
   });
 }
 
+export async function setTradingMode(paperMode: boolean): Promise<{ paper_mode: boolean }> {
+  return fetchApi<{ paper_mode: boolean }>("/config/mode", {
+    method: "POST",
+    body: JSON.stringify({ paper_mode: paperMode }),
+  });
+}
+
 export async function fetchPositions(): Promise<Position[]> {
   return fetchApi<Position[]>("/positions");
 }
