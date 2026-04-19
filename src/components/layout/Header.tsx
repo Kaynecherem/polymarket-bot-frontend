@@ -1,27 +1,42 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import { usePortfolio } from "@/hooks/use-portfolio";
 import { usePositions } from "@/hooks/use-positions";
 import { useHealth } from "@/hooks/use-health";
 import { useWebSocket } from "@/hooks/use-websocket";
-import { useAppStore } from "@/stores/app-store";
+import { useAuth } from "@/providers/auth-provider";
 import { toggleBot as toggleBotApi } from "@/lib/api";
+import { AdminButton } from "@/components/ui/admin-only";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCurrency, formatPnl } from "@/lib/utils";
-import { Moon, Sun, Menu, TrendingUp, TrendingDown } from "lucide-react";
+import { Moon, Sun, TrendingUp, TrendingDown, Shield, LogOut, Eye } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 
 export function Header() {
   const { data: portfolio } = usePortfolio();
   const { data: positions } = usePositions();
   const { data: health } = useHealth();
   const wsStatus = useWebSocket();
-  const { toggleSidebar } = useAppStore();
+  const { isAdmin, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setAdminMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const botActive = health?.auto_trade ?? false;
 
@@ -51,10 +66,6 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background px-4 md:px-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="md:hidden" onClick={toggleSidebar}>
-          <Menu className="h-4 w-4" />
-        </Button>
-
         <div className="flex items-center gap-2">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -101,13 +112,46 @@ export function Header() {
           <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
         </Button>
 
-        <Button
+        <AdminButton
           variant={botActive ? "destructive" : "success"}
           size="sm"
           onClick={handleToggleBot}
         >
           {botActive ? "STOP BOT" : "START BOT"}
-        </Button>
+        </AdminButton>
+
+        {isAdmin && (
+          <div className="relative" ref={menuRef}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setAdminMenuOpen((prev) => !prev)}
+            >
+              <Shield className="h-3.5 w-3.5" />
+              <Badge variant="green" className="text-[8px]">Admin</Badge>
+            </Button>
+            {adminMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 z-50 w-40 rounded-md border border-border bg-background p-1 shadow-lg">
+                <Link
+                  href="/viewers"
+                  className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-[11px] text-foreground hover:bg-muted transition-colors"
+                  onClick={() => setAdminMenuOpen(false)}
+                >
+                  <Eye className="h-3 w-3" />
+                  Viewers
+                </Link>
+                <button
+                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-[11px] text-accent-red hover:bg-muted transition-colors"
+                  onClick={() => { logout(); setAdminMenuOpen(false); }}
+                >
+                  <LogOut className="h-3 w-3" />
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );

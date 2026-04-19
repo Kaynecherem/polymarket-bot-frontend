@@ -14,11 +14,22 @@ import type {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
+let _authToken: string | null = null;
+
+export function setAuthToken(token: string | null) {
+  _authToken = token;
+}
+
+export function getAuthToken(): string | null {
+  return _authToken;
+}
+
 async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(_authToken ? { Authorization: `Bearer ${_authToken}` } : {}),
       ...options?.headers,
     },
   });
@@ -225,4 +236,27 @@ export async function toggleConservativeMode(enabled: boolean): Promise<Record<s
     method: "POST",
     body: JSON.stringify({ enabled }),
   });
+}
+
+export async function login(password: string): Promise<{ token: string; expires_at: string; role: string }> {
+  return fetchApi<{ token: string; expires_at: string; role: string }>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+}
+
+export async function logout(): Promise<void> {
+  await fetchApi<Record<string, unknown>>("/auth/logout", { method: "POST" });
+}
+
+export async function getSession(): Promise<{ authenticated: boolean; role: string }> {
+  return fetchApi<{ authenticated: boolean; role: string }>("/auth/session");
+}
+
+export async function fetchViewers(): Promise<Record<string, unknown>[]> {
+  return fetchApi<Record<string, unknown>[]>("/viewers");
+}
+
+export async function fetchAuditLog(limit = 100): Promise<Record<string, unknown>[]> {
+  return fetchApi<Record<string, unknown>[]>(`/audit?limit=${limit}`);
 }

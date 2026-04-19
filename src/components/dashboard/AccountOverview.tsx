@@ -2,15 +2,19 @@
 
 import { usePortfolio } from "@/hooks/use-portfolio";
 import { usePositions } from "@/hooks/use-positions";
+import { useHealth } from "@/hooks/use-health";
 import { StatCard } from "./StatCard";
 import { formatCurrency, formatPnl, formatPercentage } from "@/lib/utils";
 import { useSignals } from "@/hooks/use-signals";
 import { ResetButton } from "./ResetButton";
+import { AdminOnly } from "@/components/ui/admin-only";
 
 export function AccountOverview() {
   const { data: portfolio, isLoading } = usePortfolio();
   const { data: positions } = usePositions();
   const { data: signals } = useSignals();
+  const { data: health } = useHealth();
+  const paperMode = health?.paper_mode ?? true;
 
   const balance = portfolio?.balance ?? 0;
   const locked = (positions ?? []).reduce((s, p) => s + p.size_usdc, 0);
@@ -25,7 +29,11 @@ export function AccountOverview() {
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Account Overview</span>
-        <ResetButton />
+        {paperMode && (
+          <AdminOnly>
+            <ResetButton />
+          </AdminOnly>
+        )}
       </div>
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-9">
         <StatCard label="Cash Balance" value={formatCurrency(balance)} loading={isLoading} />

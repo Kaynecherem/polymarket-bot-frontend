@@ -3,6 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AdminOnly } from "@/components/ui/admin-only";
 import { STRATEGY_META } from "@/lib/constants";
 import { formatPrice } from "@/lib/utils";
 import type { Signal, Market, Strategy } from "@/lib/types";
@@ -70,14 +71,16 @@ export function SignalCard({ signal, market, onBuy, onSkip }: SignalCardProps) {
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <Button variant="success" size="sm" className="flex-1" onClick={onBuy}>
-            BUY {signal.side.toUpperCase()}
-          </Button>
-          <Button variant="muted" size="sm" className="flex-1" onClick={onSkip}>
-            SKIP
-          </Button>
-        </div>
+        <AdminOnly>
+          <div className="flex gap-2">
+            <Button variant="success" size="sm" className="flex-1" onClick={onBuy}>
+              BUY {signal.side.toUpperCase()}
+            </Button>
+            <Button variant="muted" size="sm" className="flex-1" onClick={onSkip}>
+              SKIP
+            </Button>
+          </div>
+        </AdminOnly>
       </Card>
     </motion.div>
   );

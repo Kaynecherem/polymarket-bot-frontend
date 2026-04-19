@@ -3,6 +3,7 @@ import { IBM_Plex_Mono } from "next/font/google";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { QueryProvider } from "@/providers/query-provider";
 import { WebSocketProvider } from "@/providers/websocket-provider";
+import { AuthProvider } from "@/providers/auth-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppShell } from "@/components/layout/AppShell";
 import { NavigationProgress } from "@/components/layout/NavigationProgress";
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${ibmPlexMono.variable} font-mono`}>
         <ThemeProvider>
           <QueryProvider>
+            <AuthProvider>
             <WebSocketProvider>
               <TooltipProvider delayDuration={200}>
                 <NavigationProgress />
@@ -45,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 />
               </TooltipProvider>
             </WebSocketProvider>
+            </AuthProvider>
           </QueryProvider>
         </ThemeProvider>
       </body>

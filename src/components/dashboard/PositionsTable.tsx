@@ -4,6 +4,7 @@ import { usePositions } from "@/hooks/use-positions";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AdminButton } from "@/components/ui/admin-only";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { STRATEGY_META } from "@/lib/constants";
@@ -141,9 +142,9 @@ export function PositionsTable() {
                         <div className="flex-1" />
                         <div className="bg-accent-green/60" style={{ width: `${tpProgress}%` }} />
                       </div>
-                      <Button variant="muted" size="sm" className="h-5 text-[8px] px-2" onClick={(e) => { e.stopPropagation(); handleClose(pos.market_id); }}>
+                      <AdminButton variant="muted" size="sm" className="h-5 text-[8px] px-2" onClick={(e) => { e.stopPropagation(); handleClose(pos.market_id); }}>
                         CLOSE
-                      </Button>
+                      </AdminButton>
                     </div>
                   </div>
                 );

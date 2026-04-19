@@ -3,17 +3,21 @@
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useHealth } from "@/hooks/use-health";
+import { useAuth } from "@/providers/auth-provider";
 import { setTradingMode } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export function ConfigForm() {
   const { data: health } = useHealth();
+  const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
 
   const paperMode = health?.paper_mode ?? true;
   const autoTrade = health?.auto_trade ?? false;
+  const switchDisabled = autoTrade || !isAdmin;
 
   const handleModeSwitch = async (checked: boolean) => {
     if (autoTrade) {
@@ -56,11 +60,20 @@ export function ConfigForm() {
             >
               {paperMode ? "PAPER" : "LIVE"}
             </span>
-            <Switch
-              checked={paperMode}
-              onCheckedChange={handleModeSwitch}
-              disabled={autoTrade}
-            />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Switch
+                    checked={paperMode}
+                    onCheckedChange={handleModeSwitch}
+                    disabled={switchDisabled}
+                  />
+                </span>
+              </TooltipTrigger>
+              {!isAdmin && (
+                <TooltipContent>Admin access required</TooltipContent>
+              )}
+            </Tooltip>
           </div>
         </div>
 
