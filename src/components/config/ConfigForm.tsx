@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { useHealth } from "@/hooks/use-health";
 import { toast } from "sonner";
 
 interface ConfigData {
@@ -27,15 +28,14 @@ const DEFAULTS: ConfigData = {
 export function ConfigForm() {
   const [config, setConfig] = useState<ConfigData>(DEFAULTS);
   const [errors, setErrors] = useState<Partial<Record<keyof ConfigData, string>>>({});
+  const { data: health } = useHealth();
 
+  // Sync paper mode from backend health endpoint
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("polybot_config");
-      if (saved) setConfig({ ...DEFAULTS, ...JSON.parse(saved) });
-    } catch {
-      // ignore
+    if (health) {
+      setConfig((prev) => ({ ...prev, paperMode: health.paper_mode }));
     }
-  }, []);
+  }, [health]);
 
   const validate = (): boolean => {
     const errs: Partial<Record<keyof ConfigData, string>> = {};
@@ -119,10 +119,15 @@ export function ConfigForm() {
 
         <div className="flex items-center justify-between">
           <Label>Paper Mode</Label>
-          <Switch
-            checked={config.paperMode}
-            onCheckedChange={(checked) => update("paperMode", checked)}
-          />
+          <div className="flex items-center gap-2">
+            <span className={`text-[10px] font-semibold ${config.paperMode ? "text-accent-orange" : "text-accent-red"}`}>
+              {config.paperMode ? "PAPER" : "LIVE"}
+            </span>
+            <Switch
+              checked={config.paperMode}
+              disabled
+            />
+          </div>
         </div>
 
         <div className="flex items-center justify-between">
