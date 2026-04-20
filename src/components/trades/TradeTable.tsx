@@ -126,23 +126,23 @@ export function TradeTable({ trades }: TradeTableProps) {
               </div>
 
               {/* Mobile card */}
-              <div className="md:hidden">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[11px] text-foreground">
-                      {truncate(trade.market_question || trade.market_id, 45)}
-                    </div>
-                    <div className="mt-0.5 flex items-center gap-1.5">
-                      <Badge variant={badgeVariant} className="text-[8px] px-1 py-0">
-                        {STRATEGY_META[trade.strategy as Strategy]?.label || trade.strategy}
-                      </Badge>
-                      <span className="text-[9px] text-muted-foreground">@ {formatPrice(trade.price)}</span>
-                      <span className="text-[9px] text-muted-foreground">{formatTimestamp(trade.timestamp)}</span>
-                    </div>
+              <div className="md:hidden space-y-1.5">
+                <div className="text-[11px] text-foreground leading-tight">
+                  {truncate(trade.market_question || trade.market_id, 55)}
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge variant={badgeVariant} className="text-[8px]">
+                      {STRATEGY_META[trade.strategy as Strategy]?.label || trade.strategy}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground">@ {formatPrice(trade.price)}</span>
                   </div>
-                  <span className={`shrink-0 text-[12px] font-bold tabular-nums ${pnl >= 0 ? "text-accent-green" : "text-accent-red"}`}>
+                  <span className={`text-[12px] font-bold tabular-nums ${pnl >= 0 ? "text-accent-green" : "text-accent-red"}`}>
                     {pnl >= 0 ? "+" : "-"}${Math.abs(pnl).toFixed(2)}
                   </span>
+                </div>
+                <div className="text-[9px] text-muted-foreground">
+                  {formatTimestamp(trade.timestamp)}
                 </div>
               </div>
             </div>
