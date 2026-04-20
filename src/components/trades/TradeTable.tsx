@@ -45,11 +45,11 @@ export function TradeTable({ trades }: TradeTableProps) {
 
   return (
     <Card className="p-4">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
           Trade History
         </span>
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-1">
           {strategies.map((s) => (
             <Button
               key={s}
@@ -64,7 +64,8 @@ export function TradeTable({ trades }: TradeTableProps) {
         </div>
       </div>
 
-      <div className="mb-2 grid grid-cols-7 gap-2 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
+      {/* Desktop header — hidden on mobile */}
+      <div className="mb-2 hidden md:grid grid-cols-7 gap-2 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
         <button className="flex items-center gap-1 text-left" onClick={() => toggleSort("timestamp")}>
           Time <ArrowUpDown className="h-2.5 w-2.5" />
         </button>
@@ -77,6 +78,15 @@ export function TradeTable({ trades }: TradeTableProps) {
         <button className="flex items-center gap-1 text-right" onClick={() => toggleSort("pnl")}>
           P&L <ArrowUpDown className="h-2.5 w-2.5" />
         </button>
+      </div>
+
+      {/* Mobile sort buttons */}
+      <div className="mb-2 flex gap-2 md:hidden">
+        {(["timestamp", "pnl"] as SortField[]).map((f) => (
+          <Button key={f} variant="ghost" size="sm" className="text-[9px] gap-1" onClick={() => toggleSort(f)}>
+            {f === "timestamp" ? "Time" : "P&L"} <ArrowUpDown className="h-2.5 w-2.5" />
+          </Button>
+        ))}
       </div>
 
       <ScrollArea className="h-[400px]">
@@ -92,25 +102,47 @@ export function TradeTable({ trades }: TradeTableProps) {
           return (
             <div
               key={trade.id || i}
-              className="grid grid-cols-7 gap-2 border-b border-border/50 py-2 text-[11px] cursor-pointer hover:bg-muted/30 transition-colors"
+              className="cursor-pointer border-b border-border/50 py-2 transition-colors hover:bg-muted/30"
               onClick={() => setSelectedTrade(trade)}
             >
-              <span className="text-muted-foreground">{formatTimestamp(trade.timestamp)}</span>
-              <span>
-                <Badge variant="green" className="text-[9px]">BUY</Badge>
-              </span>
-              <span className="col-span-2 truncate text-foreground">
-                {truncate(trade.market_question || trade.market_id, 40)}
-              </span>
-              <span>{formatPrice(trade.price)}</span>
-              <span>
-                <Badge variant={badgeVariant} className="text-[9px]">
-                  {STRATEGY_META[trade.strategy as Strategy]?.label || trade.strategy}
-                </Badge>
-              </span>
-              <span className={`text-right font-semibold ${pnl >= 0 ? "text-accent-green" : "text-accent-red"}`}>
-                {pnl >= 0 ? "+" : ""}{pnl.toFixed(2)}
-              </span>
+              {/* Desktop row */}
+              <div className="hidden md:grid grid-cols-7 gap-2 text-[11px]">
+                <span className="text-muted-foreground">{formatTimestamp(trade.timestamp)}</span>
+                <span>
+                  <Badge variant="green" className="text-[9px]">BUY</Badge>
+                </span>
+                <span className="col-span-2 truncate text-foreground">
+                  {truncate(trade.market_question || trade.market_id, 40)}
+                </span>
+                <span>{formatPrice(trade.price)}</span>
+                <span>
+                  <Badge variant={badgeVariant} className="text-[9px]">
+                    {STRATEGY_META[trade.strategy as Strategy]?.label || trade.strategy}
+                  </Badge>
+                </span>
+                <span className={`text-right font-semibold ${pnl >= 0 ? "text-accent-green" : "text-accent-red"}`}>
+                  {pnl >= 0 ? "+" : ""}{pnl.toFixed(2)}
+                </span>
+              </div>
+
+              {/* Mobile card */}
+              <div className="md:hidden space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground">{formatTimestamp(trade.timestamp)}</span>
+                  <span className={`text-[11px] font-semibold ${pnl >= 0 ? "text-accent-green" : "text-accent-red"}`}>
+                    {pnl >= 0 ? "+" : ""}${Math.abs(pnl).toFixed(2)}
+                  </span>
+                </div>
+                <div className="text-[11px] truncate text-foreground">
+                  {truncate(trade.market_question || trade.market_id, 50)}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={badgeVariant} className="text-[8px]">
+                    {STRATEGY_META[trade.strategy as Strategy]?.label || trade.strategy}
+                  </Badge>
+                  <span className="text-[10px] text-muted-foreground">@ {formatPrice(trade.price)}</span>
+                </div>
+              </div>
             </div>
           );
         })}
