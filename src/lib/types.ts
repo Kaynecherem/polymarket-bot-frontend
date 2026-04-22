@@ -221,6 +221,25 @@ export interface DetailedHealth {
   cooldowns_active: number;
 }
 
+export interface MoneyTrailData {
+  deposits: Array<{ date: string; amount: number; source: string; status?: string }>;
+  current_balances: { usdc_e: number; native_usdc: number; tokens_held: number; total: number };
+  trading_pnl: { total_gained: number; total_lost: number; net: number; wins: number; losses: number; win_rate: number };
+  losses_breakdown: Array<{ id: number; time: string; market: string; strategy: string; size: number; pnl: number; category: string; reason: string }>;
+  summary: {
+    total_deposited_tradeable: number;
+    current_tradeable: number;
+    total_lost: number;
+    pnl_from_trading: number;
+    lost_to_infrastructure: number;
+    lost_to_swap_slippage: number;
+    lost_to_fees: number;
+    lost_to_market_resolution: number;
+    unaccounted: number;
+  };
+  wallet_address: string;
+}
+
 export type Strategy = "arbitrage" | "reversion" | "sentiment";
 export type ConnectionStatus = "connected" | "connecting" | "disconnected";
 

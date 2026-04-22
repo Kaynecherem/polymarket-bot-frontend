@@ -25,9 +25,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       const mod = e.metaKey || e.ctrlKey;
       if (!mod) return;
 
-      // Cmd/Ctrl + 1-5 for tab switching
+      // Cmd/Ctrl + 1-6 for tab switching
       const num = parseInt(e.key);
-      if (num >= 1 && num <= 5) {
+      if (num >= 1 && num <= NAV_ITEMS.length) {
         e.preventDefault();
         router.push(NAV_ITEMS[num - 1].href);
         return;

@@ -1,0 +1,258 @@
+"use client";
+
+import { useMoneyTrail } from "@/hooks/use-money-trail";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency, formatPnl, cn, truncate } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { ExternalLink } from "lucide-react";
+
+const CATEGORY_COLORS: Record<string, { text: string; bg: string; badge: "red" | "orange" | "blue" | "secondary" }> = {
+  "Trading Loss": { text: "text-accent-red", bg: "bg-accent-red", badge: "red" },
+  "Ghost Position": { text: "text-purple-400", bg: "bg-purple-500", badge: "secondary" },
+  "Too Small to Sell": { text: "text-accent-orange", bg: "bg-accent-orange", badge: "orange" },
+};
+
+function getCategoryStyle(category: string) {
+  return CATEGORY_COLORS[category] || { text: "text-muted-foreground", bg: "bg-muted-foreground", badge: "secondary" as const };
+}
+
+export default function MoneyTrailContent() {
+  const { data, isLoading, error } = useMoneyTrail();
+
+  if (error) {
+    return (
+      <div className="py-12 text-center text-sm text-accent-red">
+        Failed to load money trail: {error.message}
+      </div>
+    );
+  }
+
+  if (isLoading || !data) {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-lg" />
+          ))}
+        </div>
+        <Skeleton className="h-32 rounded-lg" />
+        <Skeleton className="h-64 rounded-lg" />
+      </div>
+    );
+  }
+
+  const { current_balances, trading_pnl, losses_breakdown, summary, wallet_address } = data;
+
+  // Build the "where money went" breakdown bars
+  const breakdownItems = [
+    { label: "Trading Losses", amount: Math.abs(trading_pnl.total_lost), color: "bg-accent-red" },
+    { label: "Ghost Positions", amount: summary.lost_to_infrastructure, color: "bg-purple-500" },
+    { label: "Swap Slippage", amount: summary.lost_to_swap_slippage, color: "bg-yellow-500" },
+    { label: "Trading Fees", amount: summary.lost_to_fees, color: "bg-zinc-500" },
+    { label: "Market Resolution", amount: summary.lost_to_market_resolution, color: "bg-blue-500" },
+    { label: "Unaccounted", amount: Math.abs(summary.unaccounted), color: "bg-zinc-700" },
+  ].filter((item) => item.amount > 0);
+
+  const maxBreakdown = Math.max(...breakdownItems.map((b) => b.amount), 1);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.15 }}
+      className="space-y-6"
+    >
+      {/* Section 1: Where Is My Money Now */}
+      <div>
+        <h2 className="mb-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          Where Is My Money Now
+        </h2>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Card className="p-4">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+              USDC.e (tradeable)
+            </div>
+            <div className="mt-1 text-xl font-bold text-accent-green">
+              {formatCurrency(current_balances.usdc_e)}
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+              Native USDC
+            </div>
+            <div className="mt-1 text-xl font-bold text-accent-orange">
+              {formatCurrency(current_balances.native_usdc)}
+            </div>
+            {current_balances.native_usdc > 0 && (
+              <div className="mt-1 text-[9px] text-accent-orange/70">
+                Needs swap to USDC.e
+              </div>
+            )}
+          </Card>
+          <Card className="p-4">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+              Tokens Held
+            </div>
+            <div className="mt-1 text-xl font-bold text-foreground">
+              {formatCurrency(current_balances.tokens_held)}
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+              Total in Wallet
+            </div>
+            <div className="mt-1 text-xl font-bold text-foreground">
+              {formatCurrency(current_balances.total)}
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* Section 2: Profit & Loss Summary */}
+      <div>
+        <h2 className="mb-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          Profit & Loss Summary
+        </h2>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Card className="p-4">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+              Trading P&L
+            </div>
+            <div className={cn(
+              "mt-1 text-2xl font-bold",
+              trading_pnl.net >= 0 ? "text-accent-green" : "text-accent-red"
+            )}>
+              {formatPnl(trading_pnl.net)}
+            </div>
+            <div className="mt-1 text-[10px] text-muted-foreground">
+              {trading_pnl.wins}W / {trading_pnl.losses}L — {trading_pnl.win_rate}% WR
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+              Total Lost (All Sources)
+            </div>
+            <div className="mt-1 text-2xl font-bold text-accent-red">
+              {formatCurrency(-summary.total_lost)}
+            </div>
+            <div className="mt-1 text-[10px] text-muted-foreground">
+              From {formatCurrency(summary.total_deposited_tradeable)} deposited
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* Section 3: Where The Money Went */}
+      {breakdownItems.length > 0 && (
+        <div>
+          <h2 className="mb-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            Where The Money Went
+          </h2>
+          <Card className="p-4 space-y-3">
+            {breakdownItems.map((item) => (
+              <div key={item.label}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-foreground">{item.label}</span>
+                  <span className="text-xs font-mono font-medium text-accent-red">
+                    -{formatCurrency(item.amount)}
+                  </span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={cn("h-full rounded-full transition-all", item.color)}
+                    style={{ width: `${Math.max((item.amount / maxBreakdown) * 100, 2)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </Card>
+        </div>
+      )}
+
+      {/* Section 4: Every Loss, Line by Line */}
+      <div>
+        <h2 className="mb-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          Every Loss, Line by Line ({losses_breakdown.length})
+        </h2>
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border bg-muted/50 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <th className="px-3 py-2">Time</th>
+                  <th className="px-3 py-2">Market</th>
+                  <th className="px-3 py-2">Strategy</th>
+                  <th className="px-3 py-2 text-right">Size</th>
+                  <th className="px-3 py-2 text-right">P&L</th>
+                  <th className="px-3 py-2">Category</th>
+                  <th className="px-3 py-2">Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                {losses_breakdown.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
+                      No losses recorded
+                    </td>
+                  </tr>
+                ) : (
+                  losses_breakdown.map((loss) => {
+                    const style = getCategoryStyle(loss.category);
+                    return (
+                      <tr
+                        key={loss.id}
+                        className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+                      >
+                        <td className="px-3 py-2 whitespace-nowrap font-mono text-muted-foreground">
+                          {loss.time}
+                        </td>
+                        <td className="px-3 py-2 max-w-[200px]" title={loss.market}>
+                          {truncate(loss.market, 45)}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">{loss.strategy}</td>
+                        <td className="px-3 py-2 text-right font-mono whitespace-nowrap">
+                          {formatCurrency(loss.size)}
+                        </td>
+                        <td className={cn(
+                          "px-3 py-2 text-right font-mono font-medium whitespace-nowrap",
+                          style.text
+                        )}>
+                          {formatPnl(loss.pnl)}
+                        </td>
+                        <td className="px-3 py-2">
+                          <Badge variant={style.badge} className="text-[9px]">
+                            {loss.category}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
+                          {loss.reason.replace(/_/g, " ")}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+
+      {/* Polygonscan link */}
+      {wallet_address && (
+        <div className="pb-4 text-center">
+          <a
+            href={`https://polygonscan.com/address/${wallet_address}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            View wallet on Polygonscan
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+      )}
+    </motion.div>
+  );
+}

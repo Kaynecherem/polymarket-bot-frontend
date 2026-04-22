@@ -10,6 +10,7 @@ import type {
   ActivityEvent,
   DetailedHealth,
   LiveEventsPayload,
+  MoneyTrailData,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
@@ -259,4 +260,8 @@ export async function fetchViewers(): Promise<Record<string, unknown>[]> {
 
 export async function fetchAuditLog(limit = 100): Promise<Record<string, unknown>[]> {
   return fetchApi<Record<string, unknown>[]>(`/audit?limit=${limit}`);
+}
+
+export async function fetchMoneyTrail(): Promise<MoneyTrailData> {
+  return fetchApi<MoneyTrailData>("/money-trail");
 }

@@ -23,6 +23,7 @@ export const NAV_ITEMS = [
   { key: "markets", label: "Markets", href: "/markets", icon: "TrendingUp" },
   { key: "strategies", label: "Strategies", href: "/strategies", icon: "Brain" },
   { key: "trades", label: "Trades", href: "/trades", icon: "ArrowLeftRight" },
+  { key: "money-trail", label: "Money Trail", href: "/money-trail", icon: "Wallet" },
   { key: "config", label: "Config", href: "/config", icon: "Settings" },
 ] as const;
 

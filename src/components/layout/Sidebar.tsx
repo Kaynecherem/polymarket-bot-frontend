@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Brain,
   ArrowLeftRight,
+  Wallet,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -21,6 +22,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   TrendingUp,
   Brain,
   ArrowLeftRight,
+  Wallet,
   Settings,
 };
 
