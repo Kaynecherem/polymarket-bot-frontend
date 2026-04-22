@@ -78,6 +78,10 @@ export interface AuditSummary {
   paper_state_balance: number;
   ledger_vs_state_delta: number;
   nav: number;
+  on_chain_balance?: number;
+  ledger_drift?: number;
+  drift_warning?: boolean;
+  total_fees?: number;
 }
 
 export interface Portfolio {

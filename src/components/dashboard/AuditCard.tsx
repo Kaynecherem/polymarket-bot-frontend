@@ -43,23 +43,25 @@ export function AuditCard() {
   }
 
   const a = portfolio.audit;
-  const delta = a.ledger_vs_state_delta;
-  const drift = Math.abs(delta) >= 0.01;
+  const isLive = portfolio.paper_mode === false;
+  const ledgerDrift = a.ledger_drift ?? a.ledger_vs_state_delta ?? 0;
+  const driftWarning = a.drift_warning ?? (Math.abs(ledgerDrift) > 1.0);
   const gainedPct = a.starting_balance > 0 ? (a.realized_gained / a.starting_balance) * 100 : 0;
   const lostPct = a.starting_balance > 0 ? (a.realized_lost / a.starting_balance) * 100 : 0;
   const netTone: "green" | "red" | "neutral" =
     a.realized_net > 0 ? "green" : a.realized_net < 0 ? "red" : "neutral";
+  const totalFees = a.total_fees ?? 0;
 
   return (
     <Card className="p-4">
       <div className="mb-3 flex items-center justify-between">
         <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-          Audit &mdash; Ledger Source of Truth
+          Audit &mdash; {isLive ? "On-Chain Source of Truth" : "Ledger Source of Truth"}
         </div>
-        {drift ? (
+        {driftWarning ? (
           <span className="rounded-md border border-accent-red px-2 py-0.5 text-[10px] font-semibold uppercase text-accent-red">
-            drift: {delta >= 0 ? "+" : ""}
-            {formatCurrency(delta)}
+            drift: {ledgerDrift >= 0 ? "+" : ""}
+            {formatCurrency(ledgerDrift)}
           </span>
         ) : (
           <span className="rounded-md border border-accent-green px-2 py-0.5 text-[10px] font-semibold uppercase text-accent-green">
@@ -110,6 +112,26 @@ export function AuditCard() {
           />
         </div>
       </div>
+
+      {(totalFees > 0 || (isLive && a.on_chain_balance !== undefined)) && (
+        <div className="mt-4 border-t border-border pt-3">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {totalFees > 0 && (
+              <Stat label="Fees Paid" value={`-${formatCurrency(totalFees)}`} tone="red" />
+            )}
+            {isLive && a.on_chain_balance !== undefined && (
+              <Stat label="On-Chain" value={formatCurrency(a.on_chain_balance)} tone="neutral" />
+            )}
+            {isLive && a.ledger_drift !== undefined && (
+              <Stat
+                label="Ledger Drift"
+                value={`${a.ledger_drift >= 0 ? "+" : ""}${formatCurrency(a.ledger_drift)}`}
+                tone={Math.abs(a.ledger_drift) > 1 ? "red" : "green"}
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       {a.legacy_partial_closes > 0 && (
         <div className="mt-3 rounded-md border border-accent-orange/40 bg-accent-orange/5 p-2 text-[10px] text-accent-orange">
