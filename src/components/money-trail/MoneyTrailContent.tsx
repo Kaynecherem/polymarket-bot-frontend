@@ -46,14 +46,16 @@ export default function MoneyTrailContent() {
   const { current_balances, trading_pnl, losses_breakdown, summary, wallet_address } = data;
 
   // Build the "where money went" breakdown bars
+  const s = summary as Record<string, number>;
   const breakdownItems = [
-    { label: "Trading Losses", amount: Math.abs(trading_pnl.total_lost), color: "bg-accent-red" },
     { label: "Ghost Positions", amount: summary.lost_to_infrastructure, color: "bg-purple-500" },
+    { label: "Token Fees (Polymarket)", amount: s.lost_to_token_fees ?? 0, color: "bg-orange-500" },
     { label: "Swap Slippage", amount: summary.lost_to_swap_slippage, color: "bg-yellow-500" },
+    { label: "Trading Losses", amount: Math.abs(trading_pnl.total_lost), color: "bg-accent-red" },
+    { label: "Unclosed Positions", amount: s.lost_to_unclosed ?? 0, color: "bg-pink-500" },
     { label: "Trading Fees", amount: summary.lost_to_fees, color: "bg-zinc-500" },
-    { label: "Market Resolution", amount: summary.lost_to_market_resolution, color: "bg-blue-500" },
     { label: "Unaccounted", amount: Math.abs(summary.unaccounted), color: "bg-zinc-700" },
-  ].filter((item) => item.amount > 0);
+  ].filter((item) => item.amount > 0.005);
 
   const maxBreakdown = Math.max(...breakdownItems.map((b) => b.amount), 1);
 
