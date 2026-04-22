@@ -54,6 +54,7 @@ export default function MoneyTrailContent() {
     { label: "Trading Losses (strategy)", amount: Math.abs(trading_pnl.total_lost), color: "bg-accent-red" },
     { label: "Unclosed Positions (tokens expired worthless)", amount: s.lost_to_unclosed ?? 0, color: "bg-pink-500" },
     { label: "Recorded Trading Fees", amount: summary.lost_to_fees, color: "bg-zinc-500" },
+    { label: "Execution Slippage (fill price vs recorded)", amount: s.lost_to_execution_slippage ?? 0, color: "bg-zinc-600" },
     { label: "Trading Gains (offsets losses above)", amount: trading_pnl.total_gained, color: "bg-accent-green" },
   ].filter((item) => item.amount > 0.005);
 
