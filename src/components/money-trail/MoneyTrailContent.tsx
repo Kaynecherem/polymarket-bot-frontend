@@ -75,38 +75,44 @@ export default function MoneyTrailContent() {
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Card className="p-4">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-              USDC.e (tradeable)
+              pUSD (tradeable cash)
             </div>
             <div className="mt-1 text-xl font-bold text-accent-green">
-              {formatCurrency(current_balances.usdc_e)}
+              {formatCurrency(current_balances.pusd ?? 0)}
+            </div>
+            <div className="mt-1 text-[9px] text-muted-foreground/70">
+              V2 trading collateral
             </div>
           </Card>
           <Card className="p-4">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-              Native USDC
+              Open Position Value
             </div>
-            <div className="mt-1 text-xl font-bold text-accent-orange">
-              {formatCurrency(current_balances.native_usdc)}
+            <div className="mt-1 text-xl font-bold text-foreground">
+              {formatCurrency(current_balances.open_position_value ?? 0)}
             </div>
-            {current_balances.native_usdc > 0 && (
+            <div className="mt-1 text-[9px] text-muted-foreground/70">
+              {current_balances.open_position_count ?? 0} unresolved markets
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+              Stray (USDC.e + native)
+            </div>
+            <div className="mt-1 text-xl font-bold text-foreground">
+              {formatCurrency((current_balances.usdc_e ?? 0) + (current_balances.native_usdc ?? 0))}
+            </div>
+            {((current_balances.usdc_e ?? 0) + (current_balances.native_usdc ?? 0)) > 0.01 && (
               <div className="mt-1 text-[9px] text-accent-orange/70">
-                Needs swap to USDC.e
+                Auto-wraps to pUSD on next bot restart
               </div>
             )}
           </Card>
-          <Card className="p-4">
+          <Card className="p-4 ring-1 ring-accent-green/30">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-              Tokens Held
+              NAV (cash + open exposure)
             </div>
-            <div className="mt-1 text-xl font-bold text-foreground">
-              {formatCurrency(current_balances.tokens_held)}
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-              Total in Wallet
-            </div>
-            <div className="mt-1 text-xl font-bold text-foreground">
+            <div className="mt-1 text-xl font-bold text-accent-green">
               {formatCurrency(current_balances.total)}
             </div>
           </Card>
@@ -121,7 +127,7 @@ export default function MoneyTrailContent() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Card className="p-4">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-              Trading P&L
+              Trading P&L (closed trades)
             </div>
             <div className={cn(
               "mt-1 text-2xl font-bold",
@@ -135,13 +141,21 @@ export default function MoneyTrailContent() {
           </Card>
           <Card className="p-4">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-              Total Lost (All Sources)
+              Net vs Deposited (NAV − initial)
             </div>
-            <div className="mt-1 text-2xl font-bold text-accent-red">
-              {formatCurrency(-summary.total_lost)}
-            </div>
+            {(() => {
+              const net = current_balances.total - summary.total_deposited_tradeable;
+              return (
+                <div className={cn(
+                  "mt-1 text-2xl font-bold",
+                  net >= 0 ? "text-accent-green" : "text-accent-red"
+                )}>
+                  {formatPnl(net)}
+                </div>
+              );
+            })()}
             <div className="mt-1 text-[10px] text-muted-foreground">
-              From {formatCurrency(summary.total_deposited_tradeable)} deposited
+              {formatCurrency(current_balances.total)} now vs {formatCurrency(summary.total_deposited_tradeable)} initial
             </div>
           </Card>
         </div>

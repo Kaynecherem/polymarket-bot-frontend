@@ -223,7 +223,7 @@ export interface DetailedHealth {
 
 export interface MoneyTrailData {
   deposits: Array<{ date: string; amount: number; source: string; status?: string }>;
-  current_balances: { usdc_e: number; native_usdc: number; tokens_held: number; total: number };
+  current_balances: { pusd: number; usdc_e: number; native_usdc: number; open_position_value: number; open_position_count: number; tokens_held: number; total: number };
   trading_pnl: { total_gained: number; total_lost: number; net: number; wins: number; losses: number; win_rate: number };
   losses_breakdown: Array<{ id: number; time: string; market: string; strategy: string; size: number; pnl: number; category: string; reason: string }>;
   summary: {
