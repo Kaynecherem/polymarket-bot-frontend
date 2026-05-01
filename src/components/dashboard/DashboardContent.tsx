@@ -3,6 +3,7 @@
 import { AccountOverview } from "@/components/dashboard/AccountOverview";
 import { AuditCard } from "@/components/dashboard/AuditCard";
 import { PositionsTable } from "@/components/dashboard/PositionsTable";
+import { WalletPositionsTable } from "@/components/dashboard/WalletPositionsTable";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { LiveEventsPanel } from "@/components/dashboard/LiveEventsPanel";
 import { StrategyPerformance } from "@/components/dashboard/StrategyPerformance";
@@ -75,6 +76,7 @@ export default function DashboardContent() {
         <div className="lg:col-span-3 space-y-4">
           <MarketRegimes />
           <PositionsTable />
+          <WalletPositionsTable />
           <StrategyPerformance />
           <ConcentrationIndicator />
 

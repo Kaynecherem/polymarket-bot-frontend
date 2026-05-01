@@ -117,6 +117,32 @@ export async function fetchPositions(): Promise<Position[]> {
   return fetchApi<Position[]>("/positions");
 }
 
+export interface WalletPosition {
+  market_id: string;
+  condition_id: string;
+  asset_id: string;
+  title: string;
+  slug: string;
+  side: string;
+  outcome_index: number;
+  size: number;
+  avg_price: number;
+  current_price: number;
+  current_value: number;
+  initial_value: number;
+  pnl: number;
+  pnl_pct: number;
+  redeemable: boolean;
+  negative_risk: boolean;
+  end_date: string;
+  is_bot_tracked: boolean;
+  status: string;
+}
+
+export async function fetchWalletPositions(): Promise<WalletPosition[]> {
+  return fetchApi<WalletPosition[]>("/wallet-positions");
+}
+
 export async function closePosition(marketId: string): Promise<Record<string, unknown>> {
   return fetchApi<Record<string, unknown>>(`/positions/${encodeURIComponent(marketId)}/close`, {
     method: "POST",
