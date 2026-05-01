@@ -45,7 +45,13 @@ export function AuditCard() {
   const a = portfolio.audit;
   const isLive = portfolio.paper_mode === false;
   const ledgerDrift = a.ledger_drift ?? a.ledger_vs_state_delta ?? 0;
-  const driftWarning = a.drift_warning ?? (Math.abs(ledgerDrift) > 1.0);
+  // Positive drift (on-chain > ledger) means cash arrived from a path the
+  // trade ledger doesn't track — typically redemptions of resolved positions
+  // or external deposits. That's not a problem, just an accounting gap.
+  // Negative drift (on-chain < ledger) is the worrying case — money missing
+  // from the wallet that the ledger thinks should be there.
+  const driftIsFavorable = ledgerDrift > 0;
+  const driftWarning = (a.drift_warning ?? (Math.abs(ledgerDrift) > 1.0)) && !driftIsFavorable;
   const gainedPct = a.starting_balance > 0 ? (a.realized_gained / a.starting_balance) * 100 : 0;
   const lostPct = a.starting_balance > 0 ? (a.realized_lost / a.starting_balance) * 100 : 0;
   const netTone: "green" | "red" | "neutral" =
@@ -59,9 +65,15 @@ export function AuditCard() {
           Audit &mdash; {isLive ? "On-Chain Source of Truth" : "Ledger Source of Truth"}
         </div>
         {driftWarning ? (
-          <span className="rounded-md border border-accent-red px-2 py-0.5 text-[10px] font-semibold uppercase text-accent-red">
+          <span className="rounded-md border border-accent-red px-2 py-0.5 text-[10px] font-semibold uppercase text-accent-red"
+            title="On-chain balance is lower than ledger expects — investigate.">
             drift: {ledgerDrift >= 0 ? "+" : ""}
             {formatCurrency(ledgerDrift)}
+          </span>
+        ) : driftIsFavorable && Math.abs(ledgerDrift) > 1.0 ? (
+          <span className="rounded-md border border-accent-orange/60 px-2 py-0.5 text-[10px] font-semibold uppercase text-accent-orange/90"
+            title="Wallet has more cash than the trades ledger tracks — typically from redemptions of resolved positions or external deposits.">
+            +{formatCurrency(ledgerDrift)} unrecorded
           </span>
         ) : (
           <span className="rounded-md border border-accent-green px-2 py-0.5 text-[10px] font-semibold uppercase text-accent-green">
@@ -126,7 +138,14 @@ export function AuditCard() {
               <Stat
                 label="Ledger Drift"
                 value={`${a.ledger_drift >= 0 ? "+" : ""}${formatCurrency(a.ledger_drift)}`}
-                tone={Math.abs(a.ledger_drift) > 1 ? "red" : "green"}
+                tone={
+                  Math.abs(a.ledger_drift) <= 1
+                    ? "green"
+                    : a.ledger_drift > 0
+                    ? "muted"
+                    : "red"
+                }
+                sub={a.ledger_drift > 1 ? "from redemptions/deposits" : undefined}
               />
             )}
           </div>
