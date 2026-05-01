@@ -92,6 +92,7 @@ export interface Portfolio {
   daily_pnl: number;
   paper_mode: boolean;
   strategy_performance?: Record<string, Record<string, number>>;
+  locked?: number;
   realised_pnl?: number;
   unrealised_pnl?: number;
   open_positions?: Position[];
@@ -102,6 +103,7 @@ export interface Portfolio {
   absolute_return?: number;
   return_pct?: number;
   audit?: AuditSummary;
+  polymarket_open_count?: number;
 }
 
 export interface HealthStatus {

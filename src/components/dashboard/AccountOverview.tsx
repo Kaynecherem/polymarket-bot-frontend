@@ -17,13 +17,23 @@ export function AccountOverview() {
   const paperMode = health?.paper_mode ?? true;
 
   const balance = portfolio?.balance ?? 0;
-  const locked = (positions ?? []).reduce((s, p) => s + p.size_usdc, 0);
+  // `locked` from the API is the wider of (bot-tracked) and
+  // (Polymarket-wide open exposure) so live-mode shows the real number,
+  // including positions the bot didn't open. Fall back to summing the
+  // positions list (paper mode and pre-rollout safety).
+  const locked = portfolio?.locked
+    ?? (positions ?? []).reduce((s, p) => s + p.size_usdc, 0);
   const unrealisedPnl = portfolio?.unrealised_pnl ?? 0;
   const realisedPnl = portfolio?.realised_pnl ?? 0;
-  const totalValue = balance + locked + unrealisedPnl;
+  const nav = balance + locked;
+  const initial = portfolio?.initial_balance ?? 0;
+  const netVsDeposited = nav - initial;
   const dailyPnl = portfolio?.daily_pnl ?? 0;
   const winRate = portfolio?.win_rate ?? 0;
   const totalTrades = portfolio?.positions ?? 0;
+  const openCount = portfolio?.polymarket_open_count ?? (positions ?? []).length;
+  const cashLabel = paperMode ? "Cash Balance" : "pUSD Cash";
+  const lockedLabel = paperMode ? "Locked" : `Open Exposure (${openCount})`;
 
   return (
     <div className="space-y-2">
@@ -36,13 +46,13 @@ export function AccountOverview() {
         )}
       </div>
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-9">
-        <StatCard label="Cash Balance" value={formatCurrency(balance)} loading={isLoading} />
-        <StatCard label="Locked" value={formatCurrency(locked)} colorClass="text-accent-blue" loading={isLoading} />
-        <StatCard label="Account Value" value={formatCurrency(totalValue)} loading={isLoading} />
+        <StatCard label={cashLabel} value={formatCurrency(balance)} loading={isLoading} />
+        <StatCard label={lockedLabel} value={formatCurrency(locked)} colorClass="text-accent-blue" loading={isLoading} />
+        <StatCard label="NAV" value={formatCurrency(nav)} loading={isLoading} />
         <StatCard
-          label="Unrealised P&L"
-          value={formatPnl(unrealisedPnl)}
-          colorClass={unrealisedPnl >= 0 ? "text-accent-green" : "text-accent-red"}
+          label="Net vs Deposited"
+          value={formatPnl(netVsDeposited)}
+          colorClass={netVsDeposited >= 0 ? "text-accent-green" : "text-accent-red"}
           loading={isLoading}
         />
         <StatCard
@@ -52,19 +62,19 @@ export function AccountOverview() {
           loading={isLoading}
         />
         <StatCard
-          label="Daily P&L"
+          label="Today's P&L (24h)"
           value={formatPnl(dailyPnl)}
           colorClass={dailyPnl >= 0 ? "text-accent-green" : "text-accent-red"}
           loading={isLoading}
         />
-        <StatCard label="Win Rate" value={formatPercentage(winRate)} colorClass="text-accent-orange" loading={isLoading} />
-        <StatCard label="Total Trades" value={totalTrades} loading={isLoading} />
         <StatCard
-          label="Return"
-          value={`${(portfolio?.return_pct ?? 0).toFixed(1)}%`}
-          colorClass={(portfolio?.return_pct ?? 0) >= 0 ? "text-accent-green" : "text-accent-red"}
+          label="Unrealised P&L"
+          value={formatPnl(unrealisedPnl)}
+          colorClass={unrealisedPnl >= 0 ? "text-accent-green" : "text-accent-red"}
           loading={isLoading}
         />
+        <StatCard label="Win Rate" value={formatPercentage(winRate)} colorClass="text-accent-orange" loading={isLoading} />
+        <StatCard label="Total Trades" value={totalTrades} loading={isLoading} />
       </div>
     </div>
   );
