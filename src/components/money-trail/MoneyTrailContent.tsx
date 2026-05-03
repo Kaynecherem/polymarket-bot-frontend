@@ -44,6 +44,18 @@ export default function MoneyTrailContent() {
   }
 
   const { current_balances, trading_pnl, losses_breakdown, summary, wallet_address } = data;
+  // fees_breakdown is the per-trade fee attribution added 2026-05-04
+  // so "Recorded Trading Fees: -$67.85" stops being a faceless lump.
+  const fees_breakdown = (data as unknown as { fees_breakdown?: Array<{
+    id: number;
+    time: string;
+    market: string;
+    strategy: string;
+    size: number;
+    fee_usdc: number;
+    fee_basis: string;
+    category: string;
+  }> }).fees_breakdown ?? [];
 
   // Build the "where money went" breakdown bars
   const s = summary as Record<string, number>;
@@ -53,7 +65,7 @@ export default function MoneyTrailContent() {
     { label: "QuickSwap Swap Slippage", amount: summary.lost_to_swap_slippage, color: "bg-yellow-500" },
     { label: "Trading Losses (strategy)", amount: Math.abs(trading_pnl.total_lost), color: "bg-accent-red" },
     { label: "Unclosed Positions (tokens expired worthless)", amount: s.lost_to_unclosed ?? 0, color: "bg-pink-500" },
-    { label: "Recorded Trading Fees", amount: summary.lost_to_fees, color: "bg-zinc-500" },
+    { label: "Entry/Exit Spread Cost (fill vs midpoint)", amount: summary.lost_to_fees, color: "bg-zinc-500" },
     { label: "Execution Slippage (fill price vs recorded)", amount: s.lost_to_execution_slippage ?? 0, color: "bg-zinc-600" },
     { label: "Trading Gains (offsets losses above)", amount: trading_pnl.total_gained, color: "bg-accent-green" },
   ].filter((item) => item.amount > 0.005);
@@ -255,6 +267,66 @@ export default function MoneyTrailContent() {
           </div>
         </Card>
       </div>
+
+      {/* Section 5: Every Fee, Line by Line — answers "where did the
+          fees come from?" with a market-level attribution instead of a
+          single faceless "Recorded Trading Fees" lump. */}
+      {fees_breakdown.length > 0 && (
+        <div>
+          <h2 className="mb-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            Every Fee, Line by Line ({fees_breakdown.length})
+          </h2>
+          <Card className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <th className="px-3 py-2">Time</th>
+                    <th className="px-3 py-2">Market</th>
+                    <th className="px-3 py-2">Strategy</th>
+                    <th className="px-3 py-2 text-right">Size</th>
+                    <th className="px-3 py-2 text-right">Fee</th>
+                    <th className="px-3 py-2">Category</th>
+                    <th className="px-3 py-2">Basis</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fees_breakdown.map((row) => (
+                    <tr
+                      key={`fee-${row.id}`}
+                      className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+                    >
+                      <td className="px-3 py-2 whitespace-nowrap font-mono text-muted-foreground">
+                        {row.time}
+                      </td>
+                      <td className="px-3 py-2 max-w-[260px]" title={row.market}>
+                        {truncate(row.market, 50)}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">{row.strategy}</td>
+                      <td className="px-3 py-2 text-right font-mono whitespace-nowrap">
+                        {formatCurrency(row.size)}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono font-medium whitespace-nowrap text-accent-orange">
+                        -{formatCurrency(row.fee_usdc)}
+                      </td>
+                      <td className="px-3 py-2">
+                        <Badge variant="orange" className="text-[9px]">
+                          {row.category}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground whitespace-nowrap text-[10px]">
+                        {row.fee_basis === "spread"
+                          ? "estimated from spread (fill vs midpoint)"
+                          : "actual on-chain"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Polygonscan link */}
       {wallet_address && (

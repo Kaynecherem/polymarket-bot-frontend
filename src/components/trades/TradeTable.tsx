@@ -65,7 +65,7 @@ export function TradeTable({ trades }: TradeTableProps) {
       </div>
 
       {/* Desktop header — hidden on mobile */}
-      <div className="mb-2 hidden md:grid grid-cols-7 gap-2 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
+      <div className="mb-2 hidden md:grid grid-cols-8 gap-2 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
         <button className="flex items-center gap-1 text-left" onClick={() => toggleSort("timestamp")}>
           Time <ArrowUpDown className="h-2.5 w-2.5" />
         </button>
@@ -78,6 +78,7 @@ export function TradeTable({ trades }: TradeTableProps) {
         <button className="flex items-center gap-1 text-right" onClick={() => toggleSort("pnl")}>
           P&L <ArrowUpDown className="h-2.5 w-2.5" />
         </button>
+        <span className="text-right">Spread</span>
       </div>
 
       {/* Mobile sort buttons */}
@@ -118,7 +119,7 @@ export function TradeTable({ trades }: TradeTableProps) {
               onClick={() => setSelectedTrade(trade)}
             >
               {/* Desktop row */}
-              <div className="hidden md:grid grid-cols-7 gap-2 text-[11px]">
+              <div className="hidden md:grid grid-cols-8 gap-2 text-[11px]">
                 <span className="text-muted-foreground">{formatTimestamp(trade.timestamp)}</span>
                 <span className="flex flex-wrap gap-1">
                   <Badge variant={sideVariant} className="text-[9px]">{direction}</Badge>
@@ -138,6 +139,12 @@ export function TradeTable({ trades }: TradeTableProps) {
                   title={pnlLabel}
                 >
                   {pnl >= 0 ? "+" : ""}{pnl.toFixed(2)}
+                </span>
+                <span
+                  className="text-right text-accent-orange/80 tabular-nums"
+                  title="Entry/exit spread cost — fill price vs midpoint at fill time. Not a Polymarket fee; it's the cost of crossing the book."
+                >
+                  {(trade.fee_paid ?? 0) > 0.005 ? `-$${(trade.fee_paid ?? 0).toFixed(2)}` : "—"}
                 </span>
               </div>
 
