@@ -56,6 +56,14 @@ export default function MoneyTrailContent() {
     fee_basis: string;
     category: string;
   }> }).fees_breakdown ?? [];
+  const reconciliation = (data as unknown as { reconciliation?: {
+    starting_deposit: number;
+    net_trade_pnl: number;
+    current_nav: number;
+    expected_nav: number;
+    unaccounted_gap: number;
+    explanation: string;
+  } }).reconciliation;
 
   // Build the "where money went" breakdown bars
   const s = summary as Record<string, number>;
@@ -267,6 +275,84 @@ export default function MoneyTrailContent() {
           </div>
         </Card>
       </div>
+
+      {/* Reconciliation card — answers "where did my money go" with a
+          single signed equation: deposited + trades = expected. Any gap
+          between expected and current NAV is what's unaccounted for
+          (pre-migration V1 dust, redemption timing, settlement fees
+          not captured in events). */}
+      {reconciliation && (
+        <div>
+          <h2 className="mb-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            Reconciliation — Wallet Sources & Sinks
+          </h2>
+          <Card className="p-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+              <div>
+                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
+                  Starting Deposit
+                </div>
+                <div className="mt-1 text-base font-bold tabular-nums">
+                  {formatCurrency(reconciliation.starting_deposit)}
+                </div>
+              </div>
+              <div>
+                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
+                  Net Trade P&L (incl. fees)
+                </div>
+                <div
+                  className={cn(
+                    "mt-1 text-base font-bold tabular-nums",
+                    reconciliation.net_trade_pnl >= 0 ? "text-accent-green" : "text-accent-red"
+                  )}
+                >
+                  {formatPnl(reconciliation.net_trade_pnl)}
+                </div>
+              </div>
+              <div>
+                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
+                  Expected NAV
+                </div>
+                <div className="mt-1 text-base font-bold tabular-nums">
+                  {formatCurrency(reconciliation.expected_nav)}
+                </div>
+              </div>
+              <div>
+                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
+                  Current NAV
+                </div>
+                <div className="mt-1 text-base font-bold tabular-nums">
+                  {formatCurrency(reconciliation.current_nav)}
+                </div>
+              </div>
+              <div className={cn(
+                "rounded p-2 -m-2",
+                Math.abs(reconciliation.unaccounted_gap) > 1
+                  ? "ring-1 ring-accent-orange/40 bg-accent-orange/5"
+                  : ""
+              )}>
+                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
+                  Unaccounted Gap
+                </div>
+                <div
+                  className={cn(
+                    "mt-1 text-base font-bold tabular-nums",
+                    Math.abs(reconciliation.unaccounted_gap) > 1
+                      ? "text-accent-orange"
+                      : "text-muted-foreground"
+                  )}
+                  title={reconciliation.explanation}
+                >
+                  {formatPnl(-reconciliation.unaccounted_gap)}
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 border-t border-border/50 pt-3 text-[10px] text-muted-foreground/80">
+              {reconciliation.explanation}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Section 5: Every Fee, Line by Line — answers "where did the
           fees come from?" with a market-level attribution instead of a
