@@ -65,25 +65,47 @@ export default function MoneyTrailContent() {
     explanation: string;
   } }).reconciliation;
 
-  // Build the "where money went" breakdown bars
-  const s = summary as Record<string, number>;
+  // Build the "where money went" breakdown bars. Bars must sum to the
+  // 'Net vs Deposited' headline so operators can read the breakdown as
+  // honest subtotals, not as a fragmented multi-view of the same money.
+  //
+  // Decomposition:
+  //   Net vs Deposited = Trading Losses (strategy) - Trading Gains
+  //                    + Unaccounted Gap (off-engine drift)
+  // Spread Cost is INFORMATIONAL only and stays in the per-trade table
+  // below — it's already inside Trading Losses through the fill price.
+  // 'Execution Slippage' was a derived calc that overlapped the
+  // Unaccounted Gap; both are removed in favor of the single
+  // unaccounted_gap from the reconciliation card.
+  const tradingLossAbs = Math.abs(trading_pnl.total_lost);
+  const tradingGainAbs = Math.abs(trading_pnl.total_gained);
+  const unaccountedAbs = Math.abs(reconciliation?.unaccounted_gap ?? 0);
   const breakdownItems = [
-    { label: "Ghost Positions (orders never filled)", amount: summary.lost_to_infrastructure, color: "bg-purple-500" },
-    { label: "Polymarket Token Fees (deducted from fills)", amount: s.lost_to_token_fees ?? 0, color: "bg-orange-500" },
-    { label: "QuickSwap Swap Slippage", amount: summary.lost_to_swap_slippage, color: "bg-yellow-500" },
-    { label: "Trading Losses (strategy)", amount: Math.abs(trading_pnl.total_lost), color: "bg-accent-red" },
-    { label: "Unclosed Positions (tokens expired worthless)", amount: s.lost_to_unclosed ?? 0, color: "bg-pink-500" },
-    // NOTE: Spread Cost is informational. It's the gap between fill
-    // price and midpoint, already implicit in the trade's P&L through
-    // the fill price. Showing it as a bar alongside "Trading Losses"
-    // could imply additivity to operators. Excluded from the bar
-    // chart for that reason; surfaced separately as 'Spread Cost by
-    // Trade' below with a clear explanation.
-    { label: "Execution Slippage (fill price vs recorded)", amount: s.lost_to_execution_slippage ?? 0, color: "bg-zinc-600" },
-    { label: "Trading Gains (offsets losses above)", amount: trading_pnl.total_gained, color: "bg-accent-green" },
+    {
+      label: "Trading Losses (price moves against bot)",
+      amount: tradingLossAbs,
+      color: "bg-accent-red",
+      sign: -1 as const,
+    },
+    {
+      label: "Trading Gains (offsets losses)",
+      amount: tradingGainAbs,
+      color: "bg-accent-green",
+      sign: +1 as const,
+    },
+    {
+      label: "Unaccounted (off-engine drift)",
+      amount: unaccountedAbs,
+      color: "bg-accent-orange",
+      sign: -1 as const,
+    },
   ].filter((item) => item.amount > 0.005);
 
   const maxBreakdown = Math.max(...breakdownItems.map((b) => b.amount), 1);
+  const breakdownNetSigned = breakdownItems.reduce(
+    (acc, b) => acc + b.sign * b.amount,
+    0
+  );
 
   return (
     <motion.div
@@ -186,19 +208,37 @@ export default function MoneyTrailContent() {
         </div>
       </div>
 
-      {/* Section 3: Where The Money Went */}
+      {/* Section 3: Where The Money Went — bars sum to Net vs Deposited */}
       {breakdownItems.length > 0 && (
         <div>
-          <h2 className="mb-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Where The Money Went
-          </h2>
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              Where The Money Went
+            </h2>
+            <span className="text-[10px] text-muted-foreground/80">
+              Bars sum to Net vs Deposited:{" "}
+              <span
+                className={cn(
+                  "font-mono font-semibold",
+                  breakdownNetSigned >= 0 ? "text-accent-green" : "text-accent-red"
+                )}
+              >
+                {formatPnl(breakdownNetSigned)}
+              </span>
+            </span>
+          </div>
           <Card className="p-4 space-y-3">
             {breakdownItems.map((item) => (
               <div key={item.label}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-foreground">{item.label}</span>
-                  <span className="text-xs font-mono font-medium text-accent-red">
-                    -{formatCurrency(item.amount)}
+                  <span
+                    className={cn(
+                      "text-xs font-mono font-medium",
+                      item.sign > 0 ? "text-accent-green" : "text-accent-red"
+                    )}
+                  >
+                    {item.sign > 0 ? "+" : "-"}{formatCurrency(item.amount)}
                   </span>
                 </div>
                 <div className="h-2 w-full rounded-full bg-muted overflow-hidden">

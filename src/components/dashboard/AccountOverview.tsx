@@ -34,6 +34,13 @@ export function AccountOverview() {
   const openCount = portfolio?.polymarket_open_count ?? (positions ?? []).length;
   const cashLabel = paperMode ? "Cash Balance" : "pUSD Cash";
   const lockedLabel = paperMode ? "Locked" : `Open Exposure (${openCount})`;
+  // Net vs Deposited decomposition: trade P&L (visible in trade table)
+  // + unaccounted (V1 dust resolutions / settlement fees not in events).
+  // Surfaced as the StatCard's `sub` line so the headline number isn't
+  // disconnected from the rest of the page.
+  const unaccountedGap = Math.round(
+    (netVsDeposited - realisedPnl) * 100
+  ) / 100;
 
   return (
     <div className="space-y-2">
@@ -54,6 +61,11 @@ export function AccountOverview() {
           value={formatPnl(netVsDeposited)}
           colorClass={netVsDeposited >= 0 ? "text-accent-green" : "text-accent-red"}
           loading={isLoading}
+          sub={
+            Math.abs(netVsDeposited) > 0.01
+              ? `${formatPnl(realisedPnl)} trades, ${formatPnl(unaccountedGap)} unaccounted`
+              : undefined
+          }
         />
         <StatCard
           label="Realised P&L"
