@@ -58,9 +58,16 @@ export default function TradesContent() {
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={(() => {
-              const sorted = [...trades].reverse();
+              // Equity curve = cumulative REALISED P&L. Trade rows now include
+              // open cycles whose `pnl` field is unrealised; including those
+              // would make the line jitter with mark-to-market on open
+              // positions instead of stepping when trades actually close.
+              const closed = trades
+                .filter((t) => t.is_terminal === true || (t.is_open === false && !!t.closed_at))
+                .slice()
+                .reverse();
               let cum = 0;
-              return sorted.map((t, i) => {
+              return closed.map((t, i) => {
                 cum += t.pnl || 0;
                 return {
                   index: i,

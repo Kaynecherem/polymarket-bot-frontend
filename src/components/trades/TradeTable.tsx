@@ -99,6 +99,18 @@ export function TradeTable({ trades }: TradeTableProps) {
             : trade.strategy === "sentiment" ? "blue" as const
             : "orange" as const;
 
+          // Backend sends side="yes"|"no" for open cycles, "close_yes"|"close_no"
+          // for terminal cycles. Strip the prefix for display and show a
+          // separate state badge so operators can tell open from closed at a glance.
+          const sideRaw = (trade.side || "").toString();
+          const isClosed = sideRaw.startsWith("close_") || trade.is_terminal === true || (trade.is_open === false && !!trade.closed_at);
+          const direction = sideRaw.replace(/^close_/, "").toUpperCase() || "—";
+          const sideVariant: "green" | "red" | "secondary" =
+            direction === "YES" ? "green" : direction === "NO" ? "red" : "secondary";
+          const stateLabel = isClosed ? "CLOSED" : "OPEN";
+          const stateVariant: "secondary" | "blue" = isClosed ? "secondary" : "blue";
+          const pnlLabel = isClosed ? "P&L" : "Unrealised";
+
           return (
             <div
               key={trade.id || i}
@@ -108,8 +120,9 @@ export function TradeTable({ trades }: TradeTableProps) {
               {/* Desktop row */}
               <div className="hidden md:grid grid-cols-7 gap-2 text-[11px]">
                 <span className="text-muted-foreground">{formatTimestamp(trade.timestamp)}</span>
-                <span>
-                  <Badge variant="green" className="text-[9px]">BUY</Badge>
+                <span className="flex flex-wrap gap-1">
+                  <Badge variant={sideVariant} className="text-[9px]">{direction}</Badge>
+                  <Badge variant={stateVariant} className="text-[8px]">{stateLabel}</Badge>
                 </span>
                 <span className="col-span-2 truncate text-foreground">
                   {truncate(trade.market_question || trade.market_id, 40)}
@@ -120,7 +133,10 @@ export function TradeTable({ trades }: TradeTableProps) {
                     {STRATEGY_META[trade.strategy as Strategy]?.label || trade.strategy}
                   </Badge>
                 </span>
-                <span className={`text-right font-semibold ${pnl >= 0 ? "text-accent-green" : "text-accent-red"}`}>
+                <span
+                  className={`text-right font-semibold ${pnl >= 0 ? "text-accent-green" : "text-accent-red"}`}
+                  title={pnlLabel}
+                >
                   {pnl >= 0 ? "+" : ""}{pnl.toFixed(2)}
                 </span>
               </div>
@@ -132,6 +148,8 @@ export function TradeTable({ trades }: TradeTableProps) {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
+                    <Badge variant={sideVariant} className="text-[8px]">{direction}</Badge>
+                    <Badge variant={stateVariant} className="text-[8px]">{stateLabel}</Badge>
                     <Badge variant={badgeVariant} className="text-[8px]">
                       {STRATEGY_META[trade.strategy as Strategy]?.label || trade.strategy}
                     </Badge>
@@ -142,7 +160,7 @@ export function TradeTable({ trades }: TradeTableProps) {
                   </span>
                 </div>
                 <div className="text-[9px] text-muted-foreground">
-                  {formatTimestamp(trade.timestamp)}
+                  {formatTimestamp(trade.timestamp)} {isClosed ? "" : `· ${pnlLabel.toLowerCase()}`}
                 </div>
               </div>
             </div>
@@ -156,7 +174,11 @@ export function TradeTable({ trades }: TradeTableProps) {
           question: selectedTrade.market_question,
           entry_price: selectedTrade.entry_price || selectedTrade.price,
           exit_price: selectedTrade.exit_price || selectedTrade.price,
-          isOpen: false,
+          // Use backend-provided open/terminal flags. Was hardcoded false,
+          // so the detail panel always rendered as if every trade were
+          // closed even when it was still open.
+          isOpen: selectedTrade.is_open === true
+            || (selectedTrade.is_terminal === false && !selectedTrade.closed_at),
         } : null}
         open={!!selectedTrade}
         onClose={() => setSelectedTrade(null)}

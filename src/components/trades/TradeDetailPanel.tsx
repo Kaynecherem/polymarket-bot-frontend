@@ -98,6 +98,13 @@ export function TradeDetailPanel({
   if (!trade) return null;
 
   const isOpen = trade.isOpen ?? false;
+  // Backend uses "yes"/"no" for open cycles, "close_yes"/"close_no" for
+  // terminal cycles. Strip the prefix for display so the badge reads
+  // "YES"/"NO" with a separate state indicator below.
+  const sideRaw = (trade.side || "").toString();
+  const directionLabel = sideRaw.replace(/^close_/, "").toUpperCase() || "—";
+  const directionVariant: "green" | "red" | "secondary" =
+    directionLabel === "YES" ? "green" : directionLabel === "NO" ? "red" : "secondary";
   const question = trade.question || trade.market_question || trade.market_id;
   const entry = trade.entry_price ?? trade.price ?? 0;
   const current = isOpen
@@ -132,8 +139,11 @@ export function TradeDetailPanel({
         <SheetHeader>
           <SheetTitle className="text-sm leading-relaxed">{question}</SheetTitle>
           <SheetDescription className="flex flex-wrap gap-1.5 pt-1">
-            <Badge variant={trade.side === "yes" ? "green" : "red"}>
-              {trade.side?.toUpperCase()}
+            <Badge variant={directionVariant}>
+              {directionLabel}
+            </Badge>
+            <Badge variant={isOpen ? "blue" : "secondary"}>
+              {isOpen ? "OPEN" : "CLOSED"}
             </Badge>
             <Badge variant={badgeVariant}>
               {STRATEGY_META[trade.strategy as Strategy]?.label || trade.strategy}

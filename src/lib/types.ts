@@ -60,6 +60,13 @@ export interface Trade {
   rationale?: string;
   entry_price?: number;
   exit_price?: number;
+  // Cycle-row fields (added 2026-05-03 audit fix). Backend now emits one
+  // row per position lifecycle; these distinguish open vs terminal cycles.
+  is_open?: boolean;
+  is_terminal?: boolean;
+  state?: string;
+  close_event_id?: number | null;
+  unrealised_pnl?: number;
 }
 
 export interface AuditSummary {
