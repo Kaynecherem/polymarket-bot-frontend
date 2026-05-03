@@ -25,9 +25,15 @@ export function WalletPositionsTable() {
     return <Skeleton className="h-64 rounded-lg" />;
   }
 
-  const items = data ?? [];
-  if (items.length === 0) {
-    return null; // Don't take dashboard space if nothing to show
+  const items = data?.rows ?? [];
+  const v1HiddenCount = data?.v1_hidden_count ?? 0;
+  const v1HiddenValue = data?.v1_hidden_value ?? 0;
+
+  // If there are no V2 rows AND no hidden V1 rows, hide the card entirely.
+  // If V2 rows are empty but V1 dust exists, still render the small
+  // disclosure footer so the operator knows it's there.
+  if (items.length === 0 && v1HiddenCount === 0) {
+    return null;
   }
 
   const totalValue = items.reduce((s, p) => s + p.current_value, 0);
@@ -35,11 +41,29 @@ export function WalletPositionsTable() {
   const openCount = items.filter((p) => !p.redeemable && p.current_value > 0.01).length;
   const redeemableCount = items.filter((p) => p.redeemable && p.current_value > 0.01).length;
 
+  // V2-only: empty V2 + hidden V1 dust — render compact disclosure card.
+  if (items.length === 0 && v1HiddenCount > 0) {
+    return (
+      <Card className="p-3">
+        <div className="flex items-center justify-between text-[10px]">
+          <span className="font-medium uppercase tracking-wider text-muted-foreground">
+            Wallet Positions (V2)
+          </span>
+          <span className="text-muted-foreground/70">
+            None tracked. {v1HiddenCount} V1 legacy {v1HiddenCount === 1 ? "position" : "positions"} (
+            {formatCurrency(v1HiddenValue)} face value) hidden — pre-migration dust,
+            auto-redeems when Polymarket&apos;s resolver settles each market.
+          </span>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <Card className="p-4">
       <div className="mb-3 flex items-center justify-between">
         <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-          Wallet Positions on Polymarket ({items.length})
+          Wallet Positions (V2) ({items.length})
         </span>
         <div className="flex gap-2 text-[9px]">
           {openCount > 0 && (
@@ -139,8 +163,13 @@ export function WalletPositionsTable() {
           Unrealised: {totalPnl >= 0 ? "+" : ""}{formatCurrency(totalPnl)}
         </span>
         <span className="text-muted-foreground/70">
-          Includes positions the bot didn&apos;t open (V1 legacy / manual trades)
+          V2 / post-migration only — bot-managed positions
         </span>
+        {v1HiddenCount > 0 && (
+          <span className="text-muted-foreground/60 italic">
+            +{v1HiddenCount} V1 legacy hidden ({formatCurrency(v1HiddenValue)} face value, auto-redeems on resolution)
+          </span>
+        )}
       </div>
     </Card>
   );

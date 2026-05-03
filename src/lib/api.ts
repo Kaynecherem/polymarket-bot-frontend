@@ -139,8 +139,31 @@ export interface WalletPosition {
   status: string;
 }
 
-export async function fetchWalletPositions(): Promise<WalletPosition[]> {
-  return fetchApi<WalletPosition[]>("/wallet-positions");
+export async function fetchWalletPositions(): Promise<{
+  rows: WalletPosition[];
+  v1_hidden_count: number;
+  v1_hidden_value: number;
+}> {
+  // Fetch raw to get the top-level v1_hidden_* fields too. fetchApi
+  // would discard them since it only returns `data`.
+  const res = await fetch(`${API_URL}/wallet-positions`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(_authToken ? { Authorization: `Bearer ${_authToken}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status} ${res.statusText}`);
+  }
+  const json = await res.json();
+  if (!json.success) {
+    throw new Error(json.error || "Unknown API error");
+  }
+  return {
+    rows: (json.data ?? []) as WalletPosition[],
+    v1_hidden_count: Number(json.v1_hidden_count ?? 0),
+    v1_hidden_value: Number(json.v1_hidden_value ?? 0),
+  };
 }
 
 export async function closePosition(marketId: string): Promise<Record<string, unknown>> {
