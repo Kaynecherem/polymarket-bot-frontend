@@ -10,11 +10,13 @@ function Stat({
   value,
   tone = "neutral",
   sub,
+  hint,
 }: {
   label: string;
   value: string;
   tone?: "neutral" | "green" | "red" | "muted";
   sub?: string;
+  hint?: string;
 }) {
   const toneClass =
     tone === "green"
@@ -25,9 +27,10 @@ function Stat({
       ? "text-muted-foreground"
       : "text-foreground";
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col" title={hint}>
       <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
         {label}
+        {hint && <span className="ml-1 text-[8px] text-muted-foreground/60">ⓘ</span>}
       </div>
       <div className={`text-sm font-semibold tabular-nums ${toneClass}`}>{value}</div>
       {sub && <div className="text-[10px] text-muted-foreground tabular-nums">{sub}</div>}
@@ -129,7 +132,12 @@ export function AuditCard() {
         <div className="mt-4 border-t border-border pt-3">
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {totalFees > 0 && (
-              <Stat label="Fees Paid" value={`-${formatCurrency(totalFees)}`} tone="red" />
+              <Stat
+                label="Spread Cost (info)"
+                value={`-${formatCurrency(totalFees)}`}
+                tone="red"
+                hint="Spread paid on entry/exit (fill price vs midpoint). Already implicit in the trade price — NOT a separate cash outflow on top of P&L."
+              />
             )}
             {isLive && a.on_chain_balance !== undefined && (
               <Stat label="On-Chain" value={formatCurrency(a.on_chain_balance)} tone="neutral" />

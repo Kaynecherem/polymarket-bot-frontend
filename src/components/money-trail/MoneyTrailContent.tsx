@@ -73,7 +73,12 @@ export default function MoneyTrailContent() {
     { label: "QuickSwap Swap Slippage", amount: summary.lost_to_swap_slippage, color: "bg-yellow-500" },
     { label: "Trading Losses (strategy)", amount: Math.abs(trading_pnl.total_lost), color: "bg-accent-red" },
     { label: "Unclosed Positions (tokens expired worthless)", amount: s.lost_to_unclosed ?? 0, color: "bg-pink-500" },
-    { label: "Entry/Exit Spread Cost (fill vs midpoint)", amount: summary.lost_to_fees, color: "bg-zinc-500" },
+    // NOTE: Spread Cost is informational. It's the gap between fill
+    // price and midpoint, already implicit in the trade's P&L through
+    // the fill price. Showing it as a bar alongside "Trading Losses"
+    // could imply additivity to operators. Excluded from the bar
+    // chart for that reason; surfaced separately as 'Spread Cost by
+    // Trade' below with a clear explanation.
     { label: "Execution Slippage (fill price vs recorded)", amount: s.lost_to_execution_slippage ?? 0, color: "bg-zinc-600" },
     { label: "Trading Gains (offsets losses above)", amount: trading_pnl.total_gained, color: "bg-accent-green" },
   ].filter((item) => item.amount > 0.005);
@@ -354,14 +359,23 @@ export default function MoneyTrailContent() {
         </div>
       )}
 
-      {/* Section 5: Every Fee, Line by Line — answers "where did the
-          fees come from?" with a market-level attribution instead of a
-          single faceless "Recorded Trading Fees" lump. */}
+      {/* Section 5: Every Spread Cost, Line by Line — answers "where
+          did the fees come from?" with market-level attribution. NOTE:
+          this is NOT a separate cash outflow on top of P&L. It's the
+          spread between fill price and midpoint, already implicit in
+          the trade's price. Surfaced here so operators can see WHERE
+          their cash impact came from (price direction vs bad fill). */}
       {fees_breakdown.length > 0 && (
         <div>
           <h2 className="mb-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Every Fee, Line by Line ({fees_breakdown.length})
+            Spread Cost by Trade ({fees_breakdown.length})
           </h2>
+          <div className="mb-2 text-[10px] text-muted-foreground/80">
+            Informational — this is the spread paid on entry/exit (fill price
+            vs midpoint). It&apos;s already baked into the trade&apos;s P&amp;L
+            via the fill price, NOT a separate fee on top. Use it to see how
+            much of a trade&apos;s loss came from a bad fill vs price direction.
+          </div>
           <Card className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
